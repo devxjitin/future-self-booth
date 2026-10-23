@@ -1,4 +1,5 @@
 """Current-age estimate from a photo, using a vision chat model deployed on Azure (default gpt-5.6-luna)."""
+import asyncio
 import base64
 import io
 import json
@@ -44,18 +45,24 @@ class AzureAgeEstimator:
                     {"type": "image_url", "image_url": {"url": data_url}},
                 ]},
             ],
-            "max_completion_tokens": 300,
+            "max_completion_tokens": 1500,   # generous: a reasoning model can spend tokens before it answers
             "response_format": {"type": "json_object"},
         }
-        r = await self.client.post(self.url, json=body, headers={"api-key": API_KEY})
-        if r.status_code != 200:
-            raise AgeEstimateError(f"Age service returned an error ({r.status_code}).")
-        try:
-            out = json.loads(r.json()["choices"][0]["message"]["content"])
-            face, age = bool(out.get("face")), int(out.get("age", 0))
-        except (KeyError, ValueError, TypeError, json.JSONDecodeError):
-            raise AgeEstimateError("Age service gave an answer that could not be read.")
-        return {"face": face, "age": max(1, min(99, age)) if face else None}
+        for attempt in range(2):
+            r = await self.client.post(self.url, json=body, headers={"api-key": API_KEY})
+            if r.status_code == 429 and attempt == 0:
+                await asyncio.sleep(2)
+                continue
+            if r.status_code != 200:
+                raise AgeEstimateError(f"The age service returned an error ({r.status_code}).")
+            try:
+                out = json.loads(r.json()["choices"][0]["message"]["content"])
+                face, age = bool(out.get("face")), int(out.get("age") or 0)
+            except (KeyError, ValueError, TypeError, json.JSONDecodeError):
+                if attempt == 0:      # empty or malformed answer: ask once more
+                    continue
+                raise AgeEstimateError("The age service gave an answer that could not be read.")
+            return {"face": face, "age": max(1, min(99, age)) if face else None}
 
     async def close(self):
         await self.client.aclose()

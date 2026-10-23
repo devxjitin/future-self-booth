@@ -106,7 +106,16 @@ main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr
   .only-small{display:inline-block}
   .tag{display:none}
   .sign{padding:.4em 1.1em}
+  /* controls: ages in a tidy 5-column grid, the two buttons side by side */
+  .bar{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .6rem;align-items:stretch}
+  .chips{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .chip{min-width:0;padding:.4rem 0}
+  #code{grid-column:1/-1;width:100%}
+  .coin,.dl{padding:.7rem .4rem;font-size:.95rem;width:100%}
+  .err,.fine{grid-column:1/-1}
+  .fine{font-size:.72rem}
 }
+@media (max-width:400px){h1{font-size:1.15rem}.coin{font-size:.85rem}.dl{font-size:.9rem}}
 @media (max-height:560px){.tag,.fine{display:none}}
 @media (prefers-reduced-motion:reduce){.sign::before,.sign::after,.wait b::after{animation:none}.shot img.dev{transition:none}.coin{transition:none}}
 </style>
@@ -194,18 +203,35 @@ function applyAgeLimits(){
     if (next) setAge(Number(next.dataset.age));
   }
 }
+/* One place for API calls: retries a dropped connection once and explains failures in plain words. */
+async function api(path, fd){
+  const headers = needsCode ? {"X-Access-Code": $("code").value} : {};
+  let r;
+  for (let attempt = 0; ; attempt++){
+    try{ r = await fetch(API + path, {method:"POST", body: fd, headers}); break; }
+    catch(e){
+      if (attempt === 1) throw new Error(API
+        ? "Could not reach the server. Check your internet connection, or try a different network or DNS."
+        : "Cannot reach the app server. Start it and open http://127.0.0.1:8000 in the browser.");
+      await new Promise(res => setTimeout(res, 1500));
+    }
+  }
+  if (!r.ok){
+    const j = await r.json().catch(() => ({}));
+    throw new Error(typeof j.detail === "string" ? j.detail : "The server said no (error " + r.status + ").");
+  }
+  return r;
+}
 async function estimateAge(){
   const id = ++estimateId;
   currentAge = null; noFace = false; applyAgeLimits();
   if (!predictorOn){ showNow(""); refresh(); return; }
   predicting = true; showNow("Reading your age..."); refresh();
   const fd = new FormData(); fd.append("file", photo, "photo.jpg");
-  const headers = needsCode ? {"X-Access-Code": $("code").value} : {};
   try{
-    const r = await fetch(API + "/predict", {method:"POST", body: fd, headers});
-    const j = await r.json().catch(() => ({}));
+    const r = await api("/predict", fd);
+    const j = await r.json();
     if (id !== estimateId) return;            // a newer photo was taken meanwhile
-    if (!r.ok) throw new Error(j.detail || "Could not read your age.");
     if (!j.face){
       noFace = true; showNow("");
       $("err").textContent = "No clear face found. Retake the photo with your face inside the frame.";
@@ -214,7 +240,7 @@ async function estimateAge(){
     }
   }catch(e){
     if (id !== estimateId) return;
-    showNow(""); $("err").textContent = "Could not guess your current age. You can still pick any age.";
+    showNow(""); $("err").textContent = e.message + " You can still pick any age.";
   }
   predicting = false; applyAgeLimits(); refresh();
 }
@@ -235,10 +261,11 @@ $("camBtn").onclick = () => {
   else startCam();
 };
 $("snap").onclick = () => {
-  const v = $("cam"), c = document.createElement("canvas");
-  c.width = v.videoWidth; c.height = v.videoHeight;
-  const x = c.getContext("2d"); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(v, 0, 0);
-  c.toBlob(b => setPhoto(b), "image/jpeg", .95);
+  // shrink to at most 1024 px on the long side: faster over mobile data and plenty for the AI
+  const v = $("cam"), c = document.createElement("canvas"), k = Math.min(1, 1024 / Math.max(v.videoWidth, v.videoHeight));
+  c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+  const x = c.getContext("2d"); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(v, 0, 0, c.width, c.height);
+  c.toBlob(b => setPhoto(b), "image/jpeg", .9);
 };
 
 /* ----- generate ----- */
@@ -249,10 +276,8 @@ async function generate(){
   showMsg('Developing<b></b>');
   const fd = new FormData(); fd.append("file", photo, "photo.jpg"); fd.append("target_age", AGE); fd.append("seed", seed);
   if (currentAge !== null) fd.append("current_age", currentAge);   // lets the prompt size the change
-  const headers = needsCode ? {"X-Access-Code": $("code").value} : {};
   try{
-    const r = await fetch(API + "/age", {method:"POST", body: fd, headers});
-    if (!r.ok){ const j = await r.json().catch(() => ({})); throw new Error(j.detail || "Something went wrong. Try again."); }
+    const r = await api("/age", fd);
     result = await r.blob();
     if (resultUrl) URL.revokeObjectURL(resultUrl);
     resultUrl = URL.createObjectURL(result);
@@ -265,11 +290,7 @@ async function generate(){
     $("again").hidden = false;
   }catch(e){
     result = null;
-    const msg = e instanceof TypeError
-      ? (API ? "Cannot reach the photo booth server. Check the internet connection and try again."
-             : "Cannot reach the app server. Start it and open http://127.0.0.1:8000 in the browser.")
-      : e.message;
-    showMsg(msg, "oops"); $("again").hidden = false;
+    showMsg(e.message, "oops"); $("again").hidden = false;
   }
   busy = false; refresh();
 }
