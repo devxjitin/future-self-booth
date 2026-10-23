@@ -34,11 +34,11 @@ Set these environment variables (never commit them):
 Open http://127.0.0.1:8000 in the browser. Do not open `index.html` as a file: the page then cannot reach the server and shows "Failed to fetch".
 
 ## Deploy (GitHub Pages + AWS Lambda)
-The page is static and lives on GitHub Pages at https://ageprediction.devxjitin.dev. The API (which holds the Azure key) runs on AWS Lambda behind a public HTTPS Function URL.
+The page is static and lives on GitHub Pages at https://futureself.devxjitin.dev. The API (which holds the Azure key) runs on AWS Lambda behind a public HTTPS Function URL.
 
 1. API: set `AZURE_ENDPOINT` and `AZURE_API_KEY` in the shell, `aws login`, then run `deploy/lambda.ps1`. It packages the app, creates or updates the `future-self-booth-api` function, and writes its URL into `app/static/config.js`. The API only accepts browser calls from the Pages domain and localhost (CORS).
 2. Page: push to `main`. `.github/workflows/pages.yml` publishes `app/static` to Pages.
-3. Custom domain: at the DNS provider of `devxjitin.dev` (name.com), add a `CNAME` record `ageprediction` pointing to `devxjitin.github.io`. Then turn on "Enforce HTTPS" in the repo's Pages settings once the certificate is ready.
+3. Custom domain: at the DNS provider of `devxjitin.dev` (name.com), add a `CNAME` record `futureself` pointing to `devxjitin.github.io`. Then turn on "Enforce HTTPS" in the repo's Pages settings once the certificate is ready.
 
 The API is open (no access code), so anyone with the page can generate images on the Azure bill. Azure's rate limit (about 15 requests per minute for FLUX.2-pro) is the only cap.
 

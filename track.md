@@ -28,3 +28,4 @@ Naye entries neeche add hote hain. Purani lines edit mat karo.
 [2026-10-23 23:37] [Claude] [Init: git repo, Lambda API deploy, GitHub Pages workflow for custom domain]
 [2026-10-24 00:00] [Claude] [Update: Pages custom domain live with HTTPS, Lambda /age verified]
 [2026-10-24 00:26] [Claude] [Fix: mobile layout, photo shrink, retry and clear errors; luna answer more robust]
+[2026-10-24 00:32] [Claude] [Fix: Lambda CORS now allows futureself.devxjitin.dev (Pages domain changed); README updated]

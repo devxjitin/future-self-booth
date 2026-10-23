@@ -5,7 +5,7 @@
 param(
     [string]$Region = "us-east-1",
     [string]$Name = "future-self-booth-api",
-    [string]$Origins = "https://ageprediction.devxjitin.dev,http://127.0.0.1:8000,http://localhost:8000"
+    [string]$Origins = "https://futureself.devxjitin.dev,https://ageprediction.devxjitin.dev,http://127.0.0.1:8000,http://localhost:8000"
 )
 $ErrorActionPreference = "Continue"   # PS 5.1 treats native stderr as errors; exit codes are checked instead
 if (-not $env:AZURE_ENDPOINT -or -not $env:AZURE_API_KEY) { throw "Set AZURE_ENDPOINT and AZURE_API_KEY first." }
