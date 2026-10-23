@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Future Self Photo Booth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --velvet:#0f3a39; --velvet-dark:#082322; --velvet-lit:#1b5b58; --paper:#fbf3e2; --paper-dark:#eadfc6;
+  --ink:#1e1a17; --bulb:#ffc247; --wine:#3d120e; --coin:#c8372d; --coin-dark:#9d2820; --muted:#b9d0cb;
+  --display:"Bowlby One","Arial Black",Impact,sans-serif; --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{height:100%;font-size:clamp(15px,calc(8px + .55vw),22px)}   /* everything scales up on a big screen */
+body{margin:0;height:100dvh;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+  padding:clamp(10px,1.6vh,24px) clamp(16px,3vw,56px) clamp(8px,1.2vh,18px);color:var(--paper);font-family:var(--body);line-height:1.4;
+  background:
+    radial-gradient(ellipse 48% 42% at 50% 46%,rgba(255,206,120,.20),transparent 70%),              /* spotlight on the stage */
+    linear-gradient(90deg,rgba(0,0,0,.6),transparent 13%,transparent 87%,rgba(0,0,0,.6)),          /* curtain edges in shadow */
+    linear-gradient(180deg,rgba(0,0,0,.35),transparent 18%,transparent 72%,rgba(0,0,0,.55)),        /* top valance and floor */
+    repeating-linear-gradient(90deg,rgba(0,0,0,0) 0 93px,rgba(0,0,0,.22) 118px,rgba(0,0,0,0) 141px), /* uneven second fold rhythm */
+    repeating-linear-gradient(90deg,var(--velvet-dark) 0,var(--velvet-lit) 24px,var(--velvet) 42px,var(--velvet-dark) 62px),
+    var(--velvet)}
+:focus-visible{outline:3px solid var(--bulb);outline-offset:3px}
+button{font:inherit;cursor:pointer}
+
+/* marquee sign */
+header{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding-top:8px}
+.sign{position:relative;padding:.5em 1.7em .55em;background:linear-gradient(180deg,#511912,var(--wine));
+  border:3px solid var(--bulb);border-radius:16px;
+  box-shadow:0 0 0 7px var(--wine),0 0 0 9px rgba(255,194,71,.35),0 14px 34px rgba(0,0,0,.55),0 0 70px rgba(255,194,71,.22)}
+.sign::before,.sign::after{content:"";position:absolute;left:18px;right:18px;height:14px;
+  background:radial-gradient(circle,#fff7da 0 2.5px,var(--bulb) 3.5px,rgba(255,194,71,0) 7px) 0 50%/24px 14px repeat-x;
+  filter:drop-shadow(0 0 5px rgba(255,194,71,.95));animation:chase 1.4s steps(1) infinite}
+.sign::before{top:-8.5px}.sign::after{bottom:-8.5px;animation-delay:-.7s}
+@keyframes chase{0%{background-position-x:0}50%{background-position-x:12px}}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(1.35rem,2.6vw,2.6rem);line-height:1.05;margin:0;letter-spacing:.01em;
+  text-shadow:0 0 18px rgba(255,194,71,.35)}
+.tag{margin:.35rem 0 0;color:var(--muted);font-size:.95rem}
+
+/* stage: camera on one side, the printed frame on the other */
+main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,6vw,140px);align-items:center;justify-items:center;padding:clamp(10px,2vh,28px) 0}
+.pane{display:flex;flex-direction:column;align-items:center;gap:.7rem;width:100%;min-width:0}
+.pane-cam{align-items:flex-end}.pane-res{align-items:flex-start}   /* hug the centre so both sit in the spotlight */
+.pane-cam .btns{align-self:flex-end;width:min(100%,calc((100cqh - 3.6rem) * .8))}
+
+.stage{width:min(100%,calc((100cqh - 3.6rem) * .8));aspect-ratio:4/5;border-radius:18px;background:#06181a;position:relative;overflow:hidden;
+  display:grid;place-items:center;text-align:center;
+  box-shadow:0 0 0 6px var(--velvet-dark),0 0 0 8px rgba(255,194,71,.55),0 26px 50px rgba(0,0,0,.55)}
+.stage img,.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.stage video{transform:scaleX(-1)}
+.stage p{margin:0;padding:0 18px;color:var(--muted)}
+.ghost{background:rgba(0,0,0,.25);color:var(--paper);border:2px solid rgba(255,255,255,.35);border-radius:999px;padding:.4rem 1.1rem;font-weight:600}
+.ghost:hover{border-color:var(--bulb);color:var(--bulb)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+.strip{width:min(100%,calc((100cqh - 6.6rem) * .8 + 2.25rem));background:var(--paper);color:var(--ink);padding:.9rem 1.1rem .6rem;border-radius:4px;
+  box-shadow:0 22px 44px rgba(0,0,0,.5),0 0 90px rgba(255,206,120,.12);transform:rotate(-1.2deg)}
+.shot{aspect-ratio:4/5;background:var(--paper-dark);position:relative;overflow:hidden;border:1px solid rgba(0,0,0,.15)}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
+.shot img.raw{filter:grayscale(1) sepia(.7) blur(16px) brightness(1.7) contrast(.8);transform:scale(1.08)}
+.shot img.dev{transition:filter 2.8s ease-out,transform 2.8s ease-out}
+.wait{position:absolute;inset:0;display:grid;place-content:center;gap:10px;text-align:center;font-weight:600;color:#6a5d45;padding:0 12px}
+.wait b{display:block;width:120px;height:6px;border-radius:3px;background:rgba(0,0,0,.12);overflow:hidden;margin:0 auto}
+.wait b::after{content:"";display:block;width:40%;height:100%;background:#6a5d45;animation:slide 1.3s infinite ease-in-out}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+.oops{color:#8a2a20}
+.meta{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-top:.4rem}
+.meta strong{font-family:var(--display);font-weight:400;font-size:1.3rem}
+.meta button{background:none;border:0;color:#6a5d45;text-decoration:underline;padding:2px 0}
+.cap{margin:0;font-size:.88rem;line-height:1.25;color:#4a4033;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* controls */
+.bar{display:flex;flex-wrap:wrap;gap:.5rem 1.2rem;align-items:center;justify-content:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.chip{min-width:2.8rem;background:rgba(0,0,0,.25);color:var(--paper);border:2px solid rgba(255,255,255,.3);border-radius:10px;padding:.35rem .5rem;font-weight:700}
+.chip:hover{border-color:var(--bulb)}
+.chip[aria-checked=true]{background:var(--bulb);border-color:var(--bulb);color:var(--ink)}
+.chip[disabled]{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+.chip[disabled]:hover{border-color:rgba(255,255,255,.3)}
+.now{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:2;white-space:nowrap;
+  background:rgba(8,35,34,.88);border:2px solid var(--bulb);color:var(--paper);padding:.35rem 1rem;border-radius:999px;font-weight:600;
+  box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.now strong{font-family:var(--display);font-weight:400;color:var(--bulb);font-size:1.15em}
+#code{padding:.45rem .6rem;border-radius:10px;border:2px solid rgba(255,255,255,.3);background:#07191a;color:var(--paper);font:inherit;width:9rem}
+.coin{background:var(--coin);color:#fff;border:0;border-radius:12px;padding:.65rem 1.4rem;font-family:var(--display);font-size:1rem;
+  box-shadow:0 5px 0 var(--coin-dark);transition:transform .08s,box-shadow .08s}
+.coin:active:not([disabled]){transform:translateY(4px);box-shadow:0 1px 0 var(--coin-dark)}
+.coin[disabled]{background:#5a6b69;box-shadow:0 5px 0 #3f4d4b;cursor:not-allowed}
+.dl{background:var(--bulb);color:var(--ink);border:0;border-radius:999px;padding:.65rem 1.1rem;font-weight:700}
+.dl[disabled]{opacity:.4;cursor:not-allowed}
+.err{flex-basis:100%;margin:0;text-align:center;color:#ffb4a8;font-weight:600;min-height:1.2em;font-size:.9rem}
+.fine{flex-basis:100%;margin:0;text-align:center;color:var(--muted);font-size:.78rem}
+.only-small{display:none}
+
+@media (max-width:760px){
+  main{grid-template-columns:1fr}
+  .pane-cam,.pane-res{align-items:center}
+  .pane-res{display:none}
+  body.show-result .pane-cam{display:none}
+  body.show-result .pane-res{display:flex}
+  .pane-res .strip{width:min(100%,calc((100cqh - 9.6rem) * .8 + 2.25rem))}
+  .only-small{display:inline-block}
+  .tag{display:none}
+  .sign{padding:.4em 1.1em}
+}
+@media (max-height:560px){.tag,.fine{display:none}}
+@media (prefers-reduced-motion:reduce){.sign::before,.sign::after,.wait b::after{animation:none}.shot img.dev{transition:none}.coin{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="sign"><h1>Future Self Photo Booth</h1></div>
+  <p class="tag" id="tag">Take a photo and see a frame from later in life.</p>
+</header>
+
+<main>
+  <div class="pane pane-cam">
+    <div class="stage" id="stage">
+      <p id="stageMsg">Allow the camera to start.<br>A clear, front-facing face works best.</p>
+      <img id="preview" alt="Your photo" hidden>
+      <video id="cam" playsinline muted hidden></video>
+      <div class="now" id="now" aria-live="polite" hidden></div>
+    </div>
+    <div class="btns">
+      <button class="ghost" id="camBtn" type="button">Use camera</button>
+      <button class="ghost" id="snap" type="button" hidden>Take the shot</button>
+    </div>
+  </div>
+
+  <div class="pane pane-res">
+    <div class="strip" aria-live="polite">
+      <div class="shot" id="shot"><div class="wait">Your frame will print here.</div></div>
+      <div class="meta"><strong id="ageLabel">Age</strong><button type="button" id="again" hidden>Print again</button></div>
+      <p class="cap" id="cap"></p>
+    </div>
+    <button class="ghost only-small" id="back" type="button">Back to camera</button>
+  </div>
+</main>
+
+<div class="bar">
+  <div class="chips" id="chips" role="radiogroup" aria-label="Age to generate"></div>
+  <input type="password" id="code" placeholder="Access code" aria-label="Access code" autocomplete="off" hidden>
+  <button class="coin" id="go" type="button" disabled>Develop my frame</button>
+  <button class="dl" id="dl" type="button" disabled>Save as picture</button>
+  <p class="err" id="err" role="alert"></p>
+  <p class="fine">Just for fun, AI guesses and not a forecast. Your photo is sent to AI services to guess your age and make the frame.</p>
+</div>
+
+<script src="config.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const API = window.API_BASE || "";   // empty = same server; set by config.js when the page is hosted on GitHub Pages
+const captions = [
+  [25, "Still figuring out the plan."],
+  [35, "Owns one really good coffee machine."],
+  [45, "Says 'back in my day' about last year."],
+  [55, "Has strong opinions about thermostats."],
+  [65, "Finally has time for the garden."],
+  [75, "Tells the best stories at dinner."],
+  [99, "Everyone asks for the secret. It is snacks."],
+  [999, "Moved to the cloud. Great view, no Wi-Fi needed."]
+];
+const captionFor = a => captions.find(c => a <= c[0])[1];
+
+let AGE = 50, photo = null, previewUrl = null, needsCode = false, camStream = null, busy = false;
+let result = null, resultUrl = null, seed = 7;
+let predictorOn = true, predicting = false, currentAge = null, noFace = false, estimateId = 0;
+
+/* ----- camera ----- */
+function setPhoto(blob){
+  stopCam();
+  photo = blob;
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = URL.createObjectURL(blob);
+  $("preview").src = previewUrl; $("preview").hidden = false; $("stageMsg").hidden = true;
+  $("err").textContent = "";
+  $("camBtn").textContent = "Retake";
+  estimateAge();
+}
+
+/* ----- current age ----- */
+function showNow(html){ $("now").innerHTML = html; $("now").hidden = !html; }
+// The guess is only accurate to a few years, so show a range instead of one number.
+const ageRange = a => Math.max(1, a - 2) + "–" + (a + 2);
+function applyAgeLimits(){
+  // ages at or below the current age make no sense as a "future" frame
+  document.querySelectorAll(".chip").forEach(b => { b.disabled = currentAge !== null && Number(b.dataset.age) <= currentAge; });
+  if (currentAge !== null && AGE <= currentAge){
+    const next = [...document.querySelectorAll(".chip")].find(b => !b.disabled);
+    if (next) setAge(Number(next.dataset.age));
+  }
+}
+async function estimateAge(){
+  const id = ++estimateId;
+  currentAge = null; noFace = false; applyAgeLimits();
+  if (!predictorOn){ showNow(""); refresh(); return; }
+  predicting = true; showNow("Reading your age..."); refresh();
+  const fd = new FormData(); fd.append("file", photo, "photo.jpg");
+  const headers = needsCode ? {"X-Access-Code": $("code").value} : {};
+  try{
+    const r = await fetch(API + "/predict", {method:"POST", body: fd, headers});
+    const j = await r.json().catch(() => ({}));
+    if (id !== estimateId) return;            // a newer photo was taken meanwhile
+    if (!r.ok) throw new Error(j.detail || "Could not read your age.");
+    if (!j.face){
+      noFace = true; showNow("");
+      $("err").textContent = "No clear face found. Retake the photo with your face inside the frame.";
+    } else {
+      currentAge = j.age; showNow("You look <strong>" + ageRange(j.age) + "</strong> today");
+    }
+  }catch(e){
+    if (id !== estimateId) return;
+    showNow(""); $("err").textContent = "Could not guess your current age. You can still pick any age.";
+  }
+  predicting = false; applyAgeLimits(); refresh();
+}
+async function startCam(){
+  try{
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+    $("cam").srcObject = camStream; await $("cam").play();
+    $("cam").hidden = false; $("preview").hidden = true; $("stageMsg").hidden = true;
+    $("snap").hidden = false; $("camBtn").textContent = "Cancel camera";
+  }catch(e){ $("err").textContent = "The camera is blocked or missing. Allow camera access in the browser, then press Use camera."; }
+}
+function stopCam(){
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  camStream = null; $("cam").hidden = true; $("snap").hidden = true; $("camBtn").textContent = photo ? "Retake" : "Use camera";
+}
+$("camBtn").onclick = () => {
+  if (camStream){ stopCam(); if (photo) $("preview").hidden = false; else $("stageMsg").hidden = false; }
+  else startCam();
+};
+$("snap").onclick = () => {
+  const v = $("cam"), c = document.createElement("canvas");
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  const x = c.getContext("2d"); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(v, 0, 0);
+  c.toBlob(b => setPhoto(b), "image/jpeg", .95);
+};
+
+/* ----- generate ----- */
+function showMsg(html, cls){ $("shot").innerHTML = '<div class="wait ' + (cls||"") + '">' + html + '</div>'; }
+async function generate(){
+  if (busy) return;
+  busy = true; $("err").textContent = ""; $("again").hidden = true; document.body.classList.add("show-result"); refresh();
+  showMsg('Developing<b></b>');
+  const fd = new FormData(); fd.append("file", photo, "photo.jpg"); fd.append("target_age", AGE); fd.append("seed", seed);
+  if (currentAge !== null) fd.append("current_age", currentAge);   // lets the prompt size the change
+  const headers = needsCode ? {"X-Access-Code": $("code").value} : {};
+  try{
+    const r = await fetch(API + "/age", {method:"POST", body: fd, headers});
+    if (!r.ok){ const j = await r.json().catch(() => ({})); throw new Error(j.detail || "Something went wrong. Try again."); }
+    result = await r.blob();
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+    resultUrl = URL.createObjectURL(result);
+    const img = new Image(); img.alt = "You at age " + AGE; img.className = "raw";
+    img.onload = () => {
+      $("shot").textContent = ""; $("shot").appendChild(img);
+      requestAnimationFrame(() => requestAnimationFrame(() => { img.classList.add("dev"); img.classList.remove("raw"); }));
+    };
+    img.src = resultUrl;
+    $("again").hidden = false;
+  }catch(e){
+    result = null;
+    const msg = e instanceof TypeError
+      ? (API ? "Cannot reach the photo booth server. Check the internet connection and try again."
+             : "Cannot reach the app server. Start it and open http://127.0.0.1:8000 in the browser.")
+      : e.message;
+    showMsg(msg, "oops"); $("again").hidden = false;
+  }
+  busy = false; refresh();
+}
+$("go").onclick = generate;
+$("again").onclick = () => { seed = Math.floor(Math.random() * 1e6); generate(); };
+$("back").onclick = () => document.body.classList.remove("show-result");
+
+/* ----- save as picture ----- */
+$("dl").onclick = async () => {
+  if (!result) return;
+  const W = 440, pad = 22, iw = W - pad * 2, ih = Math.round(iw * 1.25), H = pad + ih + 96;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d");
+  x.fillStyle = "#fbf3e2"; x.fillRect(0, 0, W, H);
+  const img = await createImageBitmap(result);
+  const s = Math.max(iw / img.width, ih / img.height), sw = iw / s, sh = ih / s;
+  x.drawImage(img, (img.width - sw) / 2, Math.max(0, (img.height - sh) * .3), sw, sh, pad, pad, iw, ih);
+  x.strokeStyle = "rgba(0,0,0,.2)"; x.strokeRect(pad + .5, pad + .5, iw - 1, ih - 1);
+  x.fillStyle = "#1e1a17"; x.font = "28px 'Bowlby One','Arial Black',sans-serif"; x.fillText("Age " + AGE, pad, pad + ih + 36);
+  if (currentAge !== null){
+    x.fillStyle = "#6a5d45"; x.font = "15px Figtree,system-ui,sans-serif"; x.textAlign = "right";
+    x.fillText("Today " + ageRange(currentAge), W - pad, pad + ih + 36); x.textAlign = "left";
+  }
+  x.fillStyle = "#4a4033"; x.font = "15px Figtree,system-ui,sans-serif"; x.fillText(captionFor(AGE), pad, pad + ih + 60);
+  x.fillStyle = "#6a5d45"; x.font = "12px Figtree,system-ui,sans-serif"; x.fillText("Future Self Photo Booth. Just for fun, an AI guess.", pad, H - 12);
+  c.toBlob(b => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "future-self.png"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); });
+};
+
+function refresh(){
+  const ready = photo && !predicting && !noFace && (!needsCode || $("code").value);
+  $("go").disabled = !ready || busy;
+  $("go").textContent = busy ? "Developing..." : "Develop my frame";
+  $("dl").disabled = !result;
+}
+$("code").oninput = refresh;
+
+function setAge(a){
+  AGE = a; $("ageLabel").textContent = "Age " + a; $("cap").textContent = captionFor(a);
+  $("tag").textContent = a >= 100 ? "Take a photo and see yourself at 100, up in heaven."
+                                  : "Take a photo and see yourself at " + a + ".";
+  document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-checked", Number(b.dataset.age) === a));
+}
+function renderChips(ages){
+  const box = $("chips"); box.textContent = "";
+  ages.forEach(a => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = a; b.dataset.age = a;
+    b.setAttribute("role", "radio"); b.setAttribute("aria-label", "Age " + a);
+    b.onclick = () => setAge(a);
+    box.appendChild(b);
+  });
+}
+renderChips([20,30,40,50,60,70,80,90,100]);
+setAge(AGE);
+
+if (!/^https?:$/.test(location.protocol)){
+  // opened as a file or preview: relative API calls cannot work here, so go to the running app
+  location.replace("http://127.0.0.1:8000/");
+}
+fetch(API + "/config").then(r => r.json()).then(c => {
+  needsCode = c.needs_code; $("code").hidden = !needsCode;
+  predictorOn = c.predictor !== false;
+  if (c.ages) renderChips(c.ages);
+  if (c.age) setAge(c.age);
+  applyAgeLimits();
+  refresh();
+}).catch(() => {});
+refresh();
+startCam();   // camera-only: ask for the camera on load
+</script>
+</body>
+</html>

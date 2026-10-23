@@ -1,0 +1,6 @@
+# Packages bundled into the AWS Lambda zip (no uvicorn needed there)
+fastapi==0.115.6
+python-multipart==0.0.20
+pillow==11.1.0
+httpx==0.28.1
+mangum==0.19.0

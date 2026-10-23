@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Age prediction + FLUX.1 Kontext [dev] age editor on a single GPU instance
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: g6e.xlarge   # 1x L40S 48GB, fits Kontext bf16 with no offloading
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+  AllowedCidr:
+    Type: String
+    Description: Who may reach the app on port 80 (e.g. your IP as 1.2.3.4/32)
+  CodeBucket:
+    Type: String
+  HfTokenParam:
+    Type: String
+    Default: /age-prediction/hf-token   # SSM SecureString holding a Hugging Face token
+  AmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/deeplearning/ami/x86_64/base-oss-nvidia-driver-gpu-ubuntu-22.04/latest/ami-id
+
+Resources:
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: {Service: ec2.amazonaws.com}
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore   # shell access via Session Manager, no SSH
+      Policies:
+        - PolicyName: app
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub arn:aws:s3:::${CodeBucket}/*
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${HfTokenParam}
+
+  Profile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref Role]
+
+  Sg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Age prediction HTTP
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: !Ref AllowedCidr}
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref Profile
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          AssociatePublicIpAddress: true
+          SubnetId: !Ref SubnetId
+          GroupSet: [!Ref Sg]
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs: {VolumeSize: 200, VolumeType: gp3}
+      Tags: [{Key: Name, Value: age-prediction}]
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -ex
+          export HOME=/root
+          apt-get install -y unzip python3-venv
+          mkdir -p /opt/app && cd /opt/app
+          aws s3 cp s3://${CodeBucket}/app.zip . --region ${AWS::Region}
+          unzip -o app.zip
+          python3 -m venv venv
+          venv/bin/pip install -r requirements-gpu.txt
+          HF_TOKEN=$(aws ssm get-parameter --name ${HfTokenParam} --with-decryption \
+            --query Parameter.Value --output text --region ${AWS::Region})
+          cat > /etc/age.env <<ENV
+          BACKEND=local
+          HF_TOKEN=$HF_TOKEN
+          HF_HOME=/opt/app/hf
+          HF_HUB_ENABLE_HF_TRANSFER=1
+          KONTEXT_STEPS=20
+          MAX_SIDE=768
+          COMPILE=0
+          ENV
+          chmod 600 /etc/age.env
+          cat > /etc/systemd/system/age.service <<UNIT
+          [Unit]
+          Description=Age prediction API
+          After=network-online.target
+          [Service]
+          WorkingDirectory=/opt/app
+          EnvironmentFile=/etc/age.env
+          ExecStart=/opt/app/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 80
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+          UNIT
+          systemctl daemon-reload
+          systemctl enable --now age
+
+Outputs:
+  Url:
+    Value: !Sub http://${Instance.PublicIp}/
+  InstanceId:
+    Value: !Ref Instance
