@@ -23,18 +23,26 @@ PROMPT = ("{start} {details} "
           "Keep the exact same skin tone and complexion as in the photo; do not lighten or whiten the skin. "
           "Keep the same ethnicity, facial features and facial hair (beard, mustache). "
           "Keep the same expression; do not add a smile. "
+          "Keep the head in exactly the same position, size and angle so the photos line up. "
           "Keep everything else identical: face structure, hairstyle, clothing, background, lighting and framing.")
 
+# The frames are played back as one continuous movie, so the signs of age must grow steadily from frame to frame
+# (gray hair, wrinkles) and never jump back. Each band names one step on that ladder. Until the 60s the hairline
+# and volume are locked, because the model otherwise invents balding.
 AGE_DETAILS = [
     (34, "Subtle changes that make the face look slightly older and more mature, never younger. "
-         "Hair stays exactly the same: same hairline, "
-         "same thickness and volume, same length, no hair loss, no gray."),
-    (44, "Subtle aging: faint lines near the eyes. Full hair with the same hairline and volume, no balding, "
-         "at most a few gray strands."),
-    (57, "Natural middle-age signs: light forehead lines and crow's feet. Same hairstyle and hairline, "
-         "some gray at the temples."),
-    (70, "Visible aging: lines and softer skin. Same hairstyle, hair mostly gray."),
-    (200, "Elderly: deeper wrinkles and age spots. Same hairstyle, white hair, slightly thinner."),
+         "Hair stays exactly the same: same hairline, thickness, volume and length, no hair loss, no gray."),
+    (39, "Slightly more mature face, very faint lines near the eyes. Same full hair and hairline, no gray yet."),
+    (44, "Faint lines near the eyes and mouth. Same full hair and hairline, no balding, a few gray strands at most."),
+    (49, "Light forehead lines and crow's feet. Same hairstyle and hairline, a little gray at the temples."),
+    (54, "Clear forehead lines, crow's feet and smile lines. Same hairstyle and hairline, gray at the temples "
+         "and some gray through the hair."),
+    (59, "Defined wrinkles, slightly softer jawline. Same hairstyle, hair about one third gray."),
+    (64, "Visible aging with fine wrinkles and softer skin. Same hairstyle, hair salt-and-pepper, about half gray."),
+    (69, "Visible aging with wrinkles and softer skin. Same hairstyle, hair mostly gray."),
+    (74, "Older face with deeper wrinkles and a few age spots. Same hairstyle, hair gray to white, slightly thinner."),
+    (84, "Elderly: deep wrinkles, age spots, thinner skin. Same hairstyle, white hair, slightly thinner."),
+    (200, "Very elderly: deep wrinkles, age spots, thin skin. Same hairstyle, thin white hair."),
 ]
 
 

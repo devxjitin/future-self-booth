@@ -1,6 +1,6 @@
 ﻿# Future Self Photo Booth
 
-A just-for-fun web app. The camera takes a photo and one button, "Grow my future self", generates a batch of frames (ages 30, 40 ... 90, plus 100 "in heaven" with clouds, golden light, halo and white robes). The frames play back as a growing movie: the age counter runs up and each new face dissolves into the next, with a dot timeline, Replay, and "Save this frame". Frames start playing as they arrive. Ages too close to the guessed current age are skipped. The page has an animated AI background (drifting aurora, neural network with data pulses, moving grid floor), always fits the screen with no scrolling, and the camera is the only way to add a photo.
+A just-for-fun web app. The camera takes a photo and one button, "Grow my future self", generates a batch of frames (every 5 years from about 30 to 60, then 70, 80, 90, plus 100 "in heaven" with clouds, golden light, halo and white robes). The frames play back as a growing movie on a canvas: each face morphs into the next (the prompt locks head position so the photos line up), the age counter runs up along with the blend, with a dot timeline, Replay, and "Save this frame". Frames start playing as they arrive. Ages too close to the guessed current age are skipped. The page has an animated AI background (drifting aurora, neural network with data pulses, moving grid floor), always fits the screen with no scrolling, and the camera is the only way to add a photo.
 
 The images come from a FLUX model hosted on Azure AI Foundry (`FLUX.2-pro` by default). They are AI guesses, not forecasts, and identity is not always preserved (eye colour, face shape and expression can drift).
 
@@ -52,6 +52,6 @@ The API is open (no access code), so anyone with the page can generate images on
 - `ENABLE_PREDICTOR=1` adds a `/predict` endpoint that guesses the current age with a small ViT (needs `requirements-gpu.txt`). The UI does not use it yet.
 
 ## Notes
-- A batch is 8 FLUX calls, 3 at a time (about 40 to 60 seconds in all, within the 15 requests per minute limit); a frame that hits a rate limit is retried. All frames of a batch share one seed so the face stays consistent, "Grow again" uses a new seed.
+- A batch is 11 FLUX calls, 4 at a time (about 50 to 70 seconds in all, within the 15 requests per minute limit); a frame that hits a rate limit is retried. All frames of a batch share one seed so the face stays consistent, "Grow again" uses a new seed.
 - The camera needs `localhost` or HTTPS.
 - Idea for better identity: Cradle2Cane (github.com/byliutao/Cradle2Cane, non-commercial licence) is a fast SDXL-Turbo based aging model that takes a single photo. It is not integrated yet.

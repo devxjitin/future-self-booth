@@ -75,9 +75,7 @@ main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr
   box-shadow:0 30px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
 .shot{aspect-ratio:4/5;background:#080c18;position:relative;overflow:hidden;border-radius:12px;border:1px solid rgba(255,255,255,.14);transition:box-shadow 1s}
 .shot.heaven{box-shadow:0 0 44px rgba(255,215,120,.6),inset 0 0 0 2px rgba(255,230,160,.7)}
-.layer{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;opacity:0;transform:scale(1.06);filter:blur(10px) saturate(1.3) brightness(1.15);
-  transition:opacity 1.6s ease,transform 2s ease,filter 1.6s ease}
-.layer.on{opacity:1;transform:none;filter:none}
+#morph{position:absolute;inset:0;width:100%;height:100%;display:block}
 .scan{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
 .scan::before{content:"";position:absolute;left:0;right:0;top:0;height:22%;transform:translateY(-100%);
   background:linear-gradient(180deg,transparent,rgba(127,227,208,.14) 75%,rgba(127,227,208,.7) 99%,transparent);animation:sweep 2.4s ease-in-out infinite}
@@ -141,7 +139,7 @@ main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr
 @media (max-height:560px){.tag,.fine{display:none}}
 @media (prefers-reduced-motion:reduce){
   .mesh,.row,#ghostAge.pop,.coin::after,.scan::before,.dot.wait{animation:none}
-  .layer,.shot,.dot{transition:none}
+  .shot,.dot{transition:none}
 }
 </style>
 </head>
@@ -178,8 +176,7 @@ main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr
   <div class="pane pane-res">
     <div class="strip" aria-live="polite">
       <div class="shot" id="shot">
-        <img class="layer" id="l0" alt="">
-        <img class="layer" id="l1" alt="">
+        <canvas id="morph" aria-label="Your face ageing through the years"></canvas>
         <div class="scan" id="scan" hidden></div>
         <div class="wait" id="wait">Your future self will grow here.</div>
       </div>
@@ -203,9 +200,11 @@ main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr
 <script>
 const $ = id => document.getElementById(id);
 const API = window.API_BASE || "";   // empty = same server; set by config.js when the page is hosted on GitHub Pages
-const LADDER = [30, 40, 50, 60, 70, 80, 90, 100];   // the frames of the "growing" movie
-const STEP = 3200, HEAVEN_HOLD = 5200, WORKERS = 3;
+const LADDER = [30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100];   // the frames of the "growing" movie
+const WORKERS = 4;
 const reduceMotion = matchMedia("(prefers-reduced-motion:reduce)").matches;
+const SEG = reduceMotion ? 3 : 1.9;   // seconds per step from one frame to the next
+const DWELL = .2;                     // share of each step spent holding still on a face
 const captions = [
   [25, "Still figuring out the plan."],
   [35, "Owns one really good coffee machine."],
@@ -221,9 +220,8 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 let photo = null, previewUrl = null, needsCode = false, camStream = null, busy = false, seed = 7;
 let predictorOn = true, predicting = false, currentAge = null, noFace = false, estimateId = 0;
-let frames = [], cur = -1, runId = 0, paused = false, holdUntil = 0, timer = null;
-let front = 0, fadeT = null, tickId = 0;
-const L = [$("l0"), $("l1")];
+let frames = [], cur = -1, runId = 0, paused = false;
+let pos = 0, lastT = 0, wrapT = -1, holdEnd = 0, endHold = 0, shownCur = -2, shownLabel = "";
 
 /* ----- camera ----- */
 function setPhoto(blob){
@@ -312,52 +310,92 @@ $("snap").onclick = () => {
 /* ----- the growing movie: frames are generated in a batch and played as they arrive ----- */
 function showWait(html, cls){ const w = $("wait"); w.className = "wait " + (cls || ""); w.innerHTML = html; w.hidden = !html; }
 function resetBatch(){
-  runId++; busy = false; clearInterval(timer); timer = null;
-  frames.forEach(f => f.url && URL.revokeObjectURL(f.url));
+  runId++; busy = false;
+  frames.forEach(f => { if (f.url) URL.revokeObjectURL(f.url); if (f.bmp && f.bmp.close) f.bmp.close(); });
   frames = []; cur = -1; paused = false;
-  L.forEach(l => { l.classList.remove("on"); l.removeAttribute("src"); });
+  pos = 0; wrapT = -1; endHold = 0; shownCur = -2; shownLabel = "";
+  cx.clearRect(0, 0, cvs.width, cvs.height);
   $("scan").hidden = true; $("dots").textContent = ""; $("stat").textContent = ""; $("replay").hidden = true;
   $("ageLabel").textContent = "Age"; $("cap").textContent = ""; $("shot").classList.remove("heaven"); setGhost("");
   showWait("Your future self will grow here.");
   refresh();
 }
-function swap(url){   // cross-dissolve to a new picture on the back layer
-  const nb = L[1 - front], ob = L[front];
-  clearTimeout(fadeT);
-  nb.style.transition = "none"; nb.classList.remove("on"); nb.style.zIndex = 2; ob.style.zIndex = 1;
-  front = 1 - front;
-  nb.src = url;
-  (nb.decode ? nb.decode() : Promise.resolve()).catch(() => {}).then(() => {
-    void nb.offsetWidth; nb.style.transition = ""; nb.classList.add("on");
-    fadeT = setTimeout(() => { ob.style.transition = "none"; ob.classList.remove("on"); }, reduceMotion ? 50 : 1900);
-  });
+/* The player is a canvas: it blends each frame into the next (the faces are lined up by the prompt), runs the
+   age counter along with the blend, holds a moment on every face, and waits when the next frame is not ready yet. */
+const cvs = $("morph"), cx = cvs.getContext("2d");
+function sizeCanvas(){
+  const r = $("shot").getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 1.5);
+  cvs.width = Math.max(2, Math.round(r.width * d)); cvs.height = Math.max(2, Math.round(r.height * d));
 }
-function tickAge(from, to){   // the age counter runs up like a time machine
-  const id = ++tickId, t0 = performance.now(), ms = reduceMotion ? 0 : 1500;
-  (function run(t){
-    if (id !== tickId) return;
-    const p = ms ? Math.min(1, (t - t0) / ms) : 1, e = 1 - Math.pow(1 - p, 3);
-    $("ageLabel").textContent = "Age " + Math.round(from + (to - from) * e);
-    if (p < 1) requestAnimationFrame(run);
-  })(t0);
+new ResizeObserver(sizeCanvas).observe($("shot"));
+const ease = x => x * x * (3 - 2 * x);
+const baseAge = () => currentAge !== null ? currentAge : 18;
+const ageOf = f => f.age === null ? baseAge() : f.age;
+function drawBmp(b, alpha, zoom){
+  const W = cvs.width, H = cvs.height, s = Math.max(W / b.width, H / b.height) * zoom, sw = W / s, sh = H / s;
+  cx.globalAlpha = alpha;
+  cx.drawImage(b, (b.width - sw) / 2, Math.max(0, (b.height - sh) * .3), sw, sh, 0, 0, W, H);
+}
+function playable(){   // frames that are ready, in order, up to the first one still being drawn
+  const s = [];
+  for (let i = 0; i < frames.length; i++){
+    if (frames[i].state === "wait") break;
+    if (frames[i].state === "ok" && frames[i].bmp) s.push(i);
+  }
+  return s;
 }
 function setGhost(t){
   const g = $("ghostAge"); g.textContent = t; g.classList.remove("pop"); void g.offsetWidth; if (t !== "") g.classList.add("pop");
 }
-function show(i){
+function setCurrent(i){   // the frame nearest to what is on screen: caption, dots, ghost number, save button
+  if (i === shownCur) return;
+  shownCur = cur = i;
   const f = frames[i];
-  if (!f || f.state !== "ok") return;
-  const prev = cur >= 0 ? frames[cur] : null;
-  cur = i; swap(f.url);
-  if (f.age === null){ tickId++; $("ageLabel").textContent = "Today"; $("cap").textContent = "This is you today. Watch what the years do."; }
-  else {
-    tickAge(prev && prev.age !== null && prev.age < f.age ? prev.age : (currentAge !== null ? currentAge : 18), f.age);
-    $("cap").textContent = captionFor(f.age);
-  }
-  $("shot").classList.toggle("heaven", f.age !== null && f.age >= 100);
+  $("cap").textContent = f.age === null ? "This is you today. Watch what the years do." : captionFor(f.age);
   setGhost(f.age === null ? "" : f.age);
-  holdUntil = performance.now() + (f.age !== null && f.age >= 100 ? HEAVEN_HOLD : STEP);
-  updateDots();
+  updateDots(); refresh();
+}
+function paint(a, b, t, now){
+  const zoom = 1.02 + .012 * Math.sin(now / 2600);
+  cx.globalAlpha = 1; cx.fillStyle = "#080c18"; cx.fillRect(0, 0, cvs.width, cvs.height);
+  drawBmp(a.bmp, 1, zoom);
+  if (b && t > 0) drawBmp(b.bmp, t, zoom);
+  cx.globalAlpha = 1;
+}
+function tick(now){
+  requestAnimationFrame(tick);
+  const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
+  const s = playable();
+  if (!s.length) return;
+  if (wrapT >= 0){   // the loop restarts with a fade back to the photo of today
+    wrapT += dt / .9;
+    if (wrapT >= 1){ wrapT = -1; pos = 0; holdEnd = now + 1000; }
+    else {
+      const t = reduceMotion ? (wrapT > .5 ? 1 : 0) : ease(wrapT);
+      paint(frames[s[s.length - 1]], frames[s[0]], t, now);
+      setCurrent(t > .5 ? s[0] : s[s.length - 1]);
+      if (shownLabel !== "Today"){ shownLabel = "Today"; $("ageLabel").textContent = "Today"; }
+      $("shot").classList.remove("heaven");
+      return;
+    }
+  }
+  const n = s.length;
+  if (!paused && now >= holdEnd){
+    pos = Math.min(n - 1, pos + dt / SEG);
+    if (pos >= n - 1 && !busy){ if (!endHold) endHold = now + 3600; else if (now >= endHold){ endHold = 0; wrapT = 0; } }
+    else endHold = 0;
+  }
+  pos = Math.min(pos, n - 1);
+  const i = Math.min(n - 1, Math.floor(pos)), fr = pos - i;
+  let t = ease(Math.max(0, Math.min(1, (fr - DWELL) / (1 - 2 * DWELL))));
+  if (reduceMotion) t = t > .5 ? 1 : 0;
+  const A = frames[s[i]], B = i < n - 1 ? frames[s[i + 1]] : null;
+  paint(A, B, B ? t : 0, now);
+  setCurrent(B && t > .5 ? s[i + 1] : s[i]);
+  const v = B ? ageOf(A) + (ageOf(B) - ageOf(A)) * t : ageOf(A);
+  const label = (i === 0 && t < .02) ? "Today" : "Age " + Math.round(v);
+  if (label !== shownLabel){ shownLabel = label; $("ageLabel").textContent = label; }
+  $("shot").classList.toggle("heaven", v >= 99);
 }
 function buildDots(){
   const box = $("dots"); box.textContent = "";
@@ -366,7 +404,10 @@ function buildDots(){
     b.type = "button"; b.className = "dot";
     const name = f.age === null ? "Today" : "Age " + f.age;
     b.title = name; b.setAttribute("aria-label", name);
-    b.onclick = () => { if (frames[i].state === "ok"){ paused = true; show(i); } };
+    b.onclick = () => {   // jump to this age and hold it
+      const k = playable().indexOf(i);
+      if (k >= 0){ paused = true; wrapT = -1; endHold = 0; pos = k; updateDots(); }
+    };
     box.appendChild(b);
   });
   updateDots();
@@ -377,14 +418,8 @@ function updateDots(){
   $("stat").textContent = busy ? "Growing " + done + "/" + total : "";
   $("replay").hidden = !(frames.length > 1 && (paused || !busy));
 }
-function step(){   // the player: move on to the next frame that is ready, loop at the end
-  if (paused || !frames.length || performance.now() < holdUntil) return;
-  let n = cur + 1;
-  while (n < frames.length && frames[n].state === "fail") n++;
-  if (n < frames.length){ if (frames[n].state === "ok") show(n); return; }   // otherwise it is still being drawn
-  if (!busy) show(0);
-}
-$("replay").onclick = () => { paused = false; show(0); holdUntil = performance.now() + 1200; };
+$("replay").onclick = () => { paused = false; wrapT = -1; endHold = 0; pos = 0; holdEnd = performance.now() + 800; updateDots(); };
+requestAnimationFrame(tick);
 
 async function makeFrame(run, f){
   for (let attempt = 0; attempt < 3; attempt++){
@@ -395,7 +430,9 @@ async function makeFrame(run, f){
       const r = await api("/age", fd);
       const blob = await r.blob();
       if (run !== runId) return;
-      f.blob = blob; f.url = URL.createObjectURL(blob); f.state = "ok";
+      f.blob = blob; f.url = URL.createObjectURL(blob); f.bmp = await createImageBitmap(blob);
+      if (run !== runId) return;
+      f.state = "ok";
       return;
     }catch(e){
       f.err = e.message;
@@ -411,13 +448,14 @@ async function generate(){
   const run = ++runId;
   busy = true; paused = false; $("err").textContent = "";
   seed = frames.length ? Math.floor(Math.random() * 1e6) : 7;   // a second run gives a fresh look
-  frames.forEach(f => f.url && URL.revokeObjectURL(f.url));
+  frames.forEach(f => { if (f.url) URL.revokeObjectURL(f.url); if (f.bmp && f.bmp.close) f.bmp.close(); });
   const ages = LADDER.filter(a => currentAge === null || a >= currentAge + 4);
   frames = [{age:null, state:"ok", blob:photo, url:URL.createObjectURL(photo)}].concat((ages.length ? ages : [100]).map(a => ({age:a, state:"wait"})));
   cur = -1; document.body.classList.add("show-result");
   showWait(""); $("scan").hidden = false; buildDots();
-  show(0); holdUntil = performance.now() + 1500;
-  clearInterval(timer); timer = setInterval(step, 200);
+  frames[0].bmp = await createImageBitmap(photo);
+  if (run !== runId) return;
+  pos = 0; wrapT = -1; endHold = 0; shownCur = -2; shownLabel = ""; holdEnd = performance.now() + 1200;
   refresh();
   const queue = frames.slice(1);
   const worker = async () => { for (let f; (f = queue.shift()); ){ await makeFrame(run, f); if (run === runId) updateDots(); } };
@@ -425,7 +463,6 @@ async function generate(){
   if (run !== runId) return;
   busy = false; $("scan").hidden = true;
   if (!frames.some(f => f.age !== null && f.state === "ok")){
-    clearInterval(timer); timer = null;
     const first = frames.find(f => f.err);
     showWait(first ? first.err : "Something went wrong. Please try again.", "oops");
   } else if (frames.some(f => f.state === "fail")){
