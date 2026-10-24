@@ -6,91 +6,117 @@
 <title>Future Self Photo Booth</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --velvet:#0f3a39; --velvet-dark:#082322; --velvet-lit:#1b5b58; --paper:#fbf3e2; --paper-dark:#eadfc6;
-  --ink:#1e1a17; --bulb:#ffc247; --wine:#3d120e; --coin:#c8372d; --coin-dark:#9d2820; --muted:#b9d0cb;
-  --display:"Bowlby One","Arial Black",Impact,sans-serif; --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bg:#04060f; --text:#eaf1ff; --muted:#9db0d6; --cyan:#4df3ff; --violet:#8b5cff; --pink:#ff4fd8; --gold:#ffd778;
+  --glass:rgba(14,20,48,.58); --edge:rgba(120,170,255,.32);
+  --display:"Orbitron","Arial Black",Impact,sans-serif; --body:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{height:100%;font-size:clamp(15px,calc(8px + .55vw),22px)}   /* everything scales up on a big screen */
 body{margin:0;height:100dvh;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr) auto;
-  padding:clamp(10px,1.6vh,24px) clamp(16px,3vw,56px) clamp(8px,1.2vh,18px);color:var(--paper);font-family:var(--body);line-height:1.4;
-  background:
-    radial-gradient(ellipse 48% 42% at 50% 46%,rgba(255,206,120,.20),transparent 70%),              /* spotlight on the stage */
-    linear-gradient(90deg,rgba(0,0,0,.6),transparent 13%,transparent 87%,rgba(0,0,0,.6)),          /* curtain edges in shadow */
-    linear-gradient(180deg,rgba(0,0,0,.35),transparent 18%,transparent 72%,rgba(0,0,0,.55)),        /* top valance and floor */
-    repeating-linear-gradient(90deg,rgba(0,0,0,0) 0 93px,rgba(0,0,0,.22) 118px,rgba(0,0,0,0) 141px), /* uneven second fold rhythm */
-    repeating-linear-gradient(90deg,var(--velvet-dark) 0,var(--velvet-lit) 24px,var(--velvet) 42px,var(--velvet-dark) 62px),
-    var(--velvet)}
-:focus-visible{outline:3px solid var(--bulb);outline-offset:3px}
+  padding:clamp(10px,1.6vh,24px) clamp(16px,3vw,56px) clamp(8px,1.2vh,18px);color:var(--text);font-family:var(--body);line-height:1.4;background:var(--bg)}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
 button{font:inherit;cursor:pointer}
 
-/* marquee sign */
-header{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding-top:8px}
-.sign{position:relative;padding:.5em 1.7em .55em;background:linear-gradient(180deg,#511912,var(--wine));
-  border:3px solid var(--bulb);border-radius:16px;
-  box-shadow:0 0 0 7px var(--wine),0 0 0 9px rgba(255,194,71,.35),0 14px 34px rgba(0,0,0,.55),0 0 70px rgba(255,194,71,.22)}
-.sign::before,.sign::after{content:"";position:absolute;left:18px;right:18px;height:14px;
-  background:radial-gradient(circle,#fff7da 0 2.5px,var(--bulb) 3.5px,rgba(255,194,71,0) 7px) 0 50%/24px 14px repeat-x;
-  filter:drop-shadow(0 0 5px rgba(255,194,71,.95));animation:chase 1.4s steps(1) infinite}
-.sign::before{top:-8.5px}.sign::after{bottom:-8.5px;animation-delay:-.7s}
-@keyframes chase{0%{background-position-x:0}50%{background-position-x:12px}}
-h1{font-family:var(--display);font-weight:400;font-size:clamp(1.35rem,2.6vw,2.6rem);line-height:1.05;margin:0;letter-spacing:.01em;
-  text-shadow:0 0 18px rgba(255,194,71,.35)}
-.tag{margin:.35rem 0 0;color:var(--muted);font-size:.95rem}
+/* ---- animated AI background ---- */
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#0b1030 0,#05071a 55%,#02030a 100%)}
+.aurora{position:absolute;width:62vmax;height:62vmax;border-radius:50%;opacity:.55;will-change:transform}
+.a1{left:-18vmax;top:-22vmax;background:radial-gradient(circle,rgba(77,243,255,.5),transparent 62%);animation:drift1 26s ease-in-out infinite alternate}
+.a2{right:-20vmax;top:6vmax;background:radial-gradient(circle,rgba(139,92,255,.55),transparent 62%);animation:drift2 32s ease-in-out infinite alternate}
+.a3{left:22vw;bottom:-34vmax;background:radial-gradient(circle,rgba(255,79,216,.38),transparent 62%);animation:drift3 38s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(26vmax,18vmax) scale(1.25)}}
+@keyframes drift2{to{transform:translate(-30vmax,22vmax) scale(.85)}}
+@keyframes drift3{to{transform:translate(-28vmax,-16vmax) scale(1.2)}}
+.floor{position:absolute;left:-50%;right:-50%;bottom:-6%;height:58%;
+  background:linear-gradient(rgba(77,243,255,.4) 1px,transparent 1px) 0 0/100% 56px,linear-gradient(90deg,rgba(139,92,255,.4) 1px,transparent 1px) 0 0/64px 100%;
+  transform:perspective(420px) rotateX(64deg);transform-origin:50% 100%;
+  -webkit-mask-image:linear-gradient(to top,#000 8%,transparent 88%);mask-image:linear-gradient(to top,#000 8%,transparent 88%);
+  animation:flow 3.2s linear infinite}
+@keyframes flow{to{background-position:0 56px,0 0}}
+#net{position:absolute;inset:0;width:100%;height:100%}
+.beam{position:absolute;left:0;right:0;top:0;height:16vh;background:linear-gradient(180deg,transparent,rgba(77,243,255,.07) 70%,rgba(77,243,255,.22) 99%,transparent);
+  transform:translateY(-100%);animation:beam 11s linear infinite}
+@keyframes beam{to{transform:translateY(700%)}}
+.vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.65) 100%)}
 
-/* stage: camera on one side, the printed frame on the other */
+/* ---- header ---- */
+header{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding-top:8px}
+.sign{position:relative;display:flex;align-items:center;gap:.8em;padding:.45em 1.5em .5em 1.1em;background:var(--glass);border:1px solid rgba(77,243,255,.5);border-radius:14px;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  box-shadow:0 0 0 1px rgba(139,92,255,.25),0 0 34px rgba(77,243,255,.28),0 0 80px rgba(139,92,255,.2)}
+.badge{font-family:var(--display);font-weight:800;font-size:.7rem;letter-spacing:.12em;color:#04121a;background:linear-gradient(135deg,var(--cyan),var(--violet));
+  padding:.35em .6em;border-radius:8px;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 18px rgba(77,243,255,.9)}}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.1rem,2.2vw,2.2rem);line-height:1.1;margin:0;letter-spacing:.04em;
+  background:linear-gradient(90deg,var(--cyan),#a78bff,var(--pink),var(--cyan));background-size:300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:hue 9s linear infinite}
+@keyframes hue{to{background-position:300% 0}}
+.tag{margin:.2rem 0 0;color:var(--muted);font-size:.95rem}
+
+/* ---- stage: camera on one side, the growing frame on the other ---- */
 main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,6vw,140px);align-items:center;justify-items:center;padding:clamp(10px,2vh,28px) 0}
 .pane{display:flex;flex-direction:column;align-items:center;gap:.7rem;width:100%;min-width:0}
 .pane-cam{align-items:flex-end}.pane-res{align-items:flex-start}   /* hug the centre so both sit in the spotlight */
 .pane-cam .btns{align-self:flex-end;width:min(100%,calc((100cqh - 3.6rem) * .8))}
 
-.stage{width:min(100%,calc((100cqh - 3.6rem) * .8));aspect-ratio:4/5;border-radius:18px;background:#06181a;position:relative;overflow:hidden;
+.stage{width:min(100%,calc((100cqh - 3.6rem) * .8));aspect-ratio:4/5;border-radius:18px;background:#050c1c;position:relative;overflow:hidden;
   display:grid;place-items:center;text-align:center;
-  box-shadow:0 0 0 6px var(--velvet-dark),0 0 0 8px rgba(255,194,71,.55),0 26px 50px rgba(0,0,0,.55)}
+  box-shadow:0 0 0 2px rgba(77,243,255,.55),0 0 34px rgba(77,243,255,.3),0 0 90px rgba(139,92,255,.22),0 26px 50px rgba(0,0,0,.55)}
 .stage img,.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .stage video{transform:scaleX(-1)}
 .stage p{margin:0;padding:0 18px;color:var(--muted)}
-.ghost{background:rgba(0,0,0,.25);color:var(--paper);border:2px solid rgba(255,255,255,.35);border-radius:999px;padding:.4rem 1.1rem;font-weight:600}
-.ghost:hover{border-color:var(--bulb);color:var(--bulb)}
+.ghost{background:rgba(14,20,48,.55);color:var(--text);border:1px solid rgba(157,176,214,.5);border-radius:999px;padding:.4rem 1.1rem;font-weight:600}
+.ghost:hover{border-color:var(--cyan);color:var(--cyan)}
 .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
-.strip{width:min(100%,calc((100cqh - 6.6rem) * .8 + 2.25rem));background:var(--paper);color:var(--ink);padding:.9rem 1.1rem .6rem;border-radius:4px;
-  box-shadow:0 22px 44px rgba(0,0,0,.5),0 0 90px rgba(255,206,120,.12);transform:rotate(-1.2deg)}
-.shot{aspect-ratio:4/5;background:var(--paper-dark);position:relative;overflow:hidden;border:1px solid rgba(0,0,0,.15)}
-.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
-.shot img.raw{filter:grayscale(1) sepia(.7) blur(16px) brightness(1.7) contrast(.8);transform:scale(1.08)}
-.shot img.dev{transition:filter 2.8s ease-out,transform 2.8s ease-out}
-.wait{position:absolute;inset:0;display:grid;place-content:center;gap:10px;text-align:center;font-weight:600;color:#6a5d45;padding:0 12px}
-.wait b{display:block;width:120px;height:6px;border-radius:3px;background:rgba(0,0,0,.12);overflow:hidden;margin:0 auto}
-.wait b::after{content:"";display:block;width:40%;height:100%;background:#6a5d45;animation:slide 1.3s infinite ease-in-out}
-@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
-.oops{color:#8a2a20}
-.meta{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-top:.4rem}
-.meta strong{font-family:var(--display);font-weight:400;font-size:1.3rem}
-.meta button{background:none;border:0;color:#6a5d45;text-decoration:underline;padding:2px 0}
-.cap{margin:0;font-size:.88rem;line-height:1.25;color:#4a4033;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.strip{width:min(100%,calc((100cqh - 7.8rem) * .8 + 2.25rem));background:linear-gradient(160deg,rgba(28,38,86,.74),rgba(10,14,38,.82));color:var(--text);
+  padding:.9rem 1.1rem .7rem;border-radius:16px;border:1px solid var(--edge);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  box-shadow:0 22px 44px rgba(0,0,0,.5),0 0 60px rgba(139,92,255,.25),inset 0 0 30px rgba(77,243,255,.06)}
+.shot{aspect-ratio:4/5;background:#06101f;position:relative;overflow:hidden;border-radius:8px;border:1px solid rgba(77,243,255,.35);transition:box-shadow 1s}
+.shot.heaven{box-shadow:0 0 44px rgba(255,215,120,.65),inset 0 0 0 2px rgba(255,230,160,.7)}
+.layer{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;opacity:0;transform:scale(1.06);filter:blur(10px) saturate(1.4) brightness(1.2);
+  transition:opacity 1.6s ease,transform 2s ease,filter 1.6s ease}
+.layer.on{opacity:1;transform:none;filter:none}
+.scan{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden;
+  background:repeating-linear-gradient(0deg,rgba(77,243,255,.07) 0 1px,transparent 1px 4px)}
+.scan::before{content:"";position:absolute;left:0;right:0;top:0;height:20%;transform:translateY(-100%);
+  background:linear-gradient(180deg,transparent,rgba(77,243,255,.3) 70%,rgba(77,243,255,.95) 99%,transparent);animation:sweep 2.2s ease-in-out infinite}
+@keyframes sweep{to{transform:translateY(500%)}}
+.wait{position:absolute;inset:0;z-index:3;display:grid;place-content:center;gap:10px;text-align:center;font-weight:600;color:var(--muted);padding:0 12px}
+.wait.oops{color:#ffb0b0;background:rgba(6,16,31,.92)}
+.meta{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-top:.5rem}
+.meta strong{font-family:var(--display);font-weight:800;font-size:1.25rem;color:var(--cyan);text-shadow:0 0 14px rgba(77,243,255,.6);white-space:nowrap}
+.meta span{display:flex;gap:.7rem;align-items:baseline;color:var(--muted);font-size:.85rem}
+.meta button{background:none;border:0;color:var(--cyan);text-decoration:underline;padding:2px 0}
+.dots{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-top:.45rem;min-height:.8rem}
+.dot{width:.78rem;height:.78rem;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.2);transition:transform .3s,box-shadow .3s,background .3s}
+.dot.ok{background:var(--cyan)}
+.dot.wait{animation:blink 1.1s ease-in-out infinite}
+.dot.fail{opacity:.15}
+.dot.cur{transform:scale(1.4);box-shadow:0 0 0 3px rgba(77,243,255,.3),0 0 14px var(--cyan)}
+@keyframes blink{50%{background:rgba(139,92,255,.9)}}
+.cap{margin:.4rem 0 0;font-size:.9rem;line-height:1.25;color:#bccaf0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em}
 
-/* controls */
+/* ---- controls ---- */
 .bar{display:flex;flex-wrap:wrap;gap:.5rem 1.2rem;align-items:center;justify-content:center}
-.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.chip{min-width:2.8rem;background:rgba(0,0,0,.25);color:var(--paper);border:2px solid rgba(255,255,255,.3);border-radius:10px;padding:.35rem .5rem;font-weight:700}
-.chip:hover{border-color:var(--bulb)}
-.chip[aria-checked=true]{background:var(--bulb);border-color:var(--bulb);color:var(--ink)}
-.chip[disabled]{opacity:.3;cursor:not-allowed;text-decoration:line-through}
-.chip[disabled]:hover{border-color:rgba(255,255,255,.3)}
 .now{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:2;white-space:nowrap;
-  background:rgba(8,35,34,.88);border:2px solid var(--bulb);color:var(--paper);padding:.35rem 1rem;border-radius:999px;font-weight:600;
-  box-shadow:0 6px 18px rgba(0,0,0,.4)}
-.now strong{font-family:var(--display);font-weight:400;color:var(--bulb);font-size:1.15em}
-#code{padding:.45rem .6rem;border-radius:10px;border:2px solid rgba(255,255,255,.3);background:#07191a;color:var(--paper);font:inherit;width:9rem}
-.coin{background:var(--coin);color:#fff;border:0;border-radius:12px;padding:.65rem 1.4rem;font-family:var(--display);font-size:1rem;
-  box-shadow:0 5px 0 var(--coin-dark);transition:transform .08s,box-shadow .08s}
-.coin:active:not([disabled]){transform:translateY(4px);box-shadow:0 1px 0 var(--coin-dark)}
-.coin[disabled]{background:#5a6b69;box-shadow:0 5px 0 #3f4d4b;cursor:not-allowed}
-.dl{background:var(--bulb);color:var(--ink);border:0;border-radius:999px;padding:.65rem 1.1rem;font-weight:700}
+  background:rgba(6,12,30,.85);border:1px solid var(--cyan);color:var(--text);padding:.35rem 1rem;border-radius:999px;font-weight:600;
+  box-shadow:0 0 18px rgba(77,243,255,.35)}
+.now strong{font-family:var(--display);font-weight:800;color:var(--cyan);font-size:1.05em}
+#code{padding:.45rem .6rem;border-radius:10px;border:1px solid var(--edge);background:#07102a;color:var(--text);font:inherit;width:9rem}
+.coin{position:relative;overflow:hidden;background:linear-gradient(90deg,#7c5cff,var(--pink));color:#fff;border:0;border-radius:12px;padding:.7rem 1.5rem;
+  font-family:var(--display);font-weight:800;font-size:.9rem;letter-spacing:.04em;box-shadow:0 0 26px rgba(124,92,255,.6),0 5px 0 #3b2a8a;transition:transform .08s,box-shadow .08s}
+.coin::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);animation:sheen 3.2s ease-in-out infinite}
+@keyframes sheen{60%,100%{left:130%}}
+.coin:active:not([disabled]){transform:translateY(4px);box-shadow:0 0 18px rgba(124,92,255,.6),0 1px 0 #3b2a8a}
+.coin[disabled]{background:#3a4468;box-shadow:0 5px 0 #262d49;cursor:not-allowed;color:#aab4d4}
+.coin[disabled]::after{display:none}
+.dl{background:rgba(77,243,255,.12);color:var(--cyan);border:1px solid var(--cyan);border-radius:999px;padding:.65rem 1.1rem;font-weight:700}
+.dl:hover:not([disabled]){background:rgba(77,243,255,.25)}
 .dl[disabled]{opacity:.4;cursor:not-allowed}
 .err{flex-basis:100%;margin:0;text-align:center;color:#ffb4a8;font-weight:600;min-height:1.2em;font-size:.9rem}
 .fine{flex-basis:100%;margin:0;text-align:center;color:var(--muted);font-size:.78rem}
@@ -102,28 +128,37 @@ main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr
   .pane-res{display:none}
   body.show-result .pane-cam{display:none}
   body.show-result .pane-res{display:flex}
-  .pane-res .strip{width:min(100%,calc((100cqh - 9.6rem) * .8 + 2.25rem))}
+  .pane-res .strip{width:min(100%,calc((100cqh - 10.8rem) * .8 + 2.25rem))}
   .only-small{display:inline-block}
   .tag{display:none}
-  .sign{padding:.4em 1.1em}
-  /* controls: ages in a tidy 5-column grid, the two buttons side by side */
+  .sign{padding:.4em 1em .45em .8em}
   .bar{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .6rem;align-items:stretch}
-  .chips{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-  .chip{min-width:0;padding:.4rem 0}
   #code{grid-column:1/-1;width:100%}
-  .coin,.dl{padding:.7rem .4rem;font-size:.95rem;width:100%}
+  .coin,.dl{padding:.7rem .4rem;font-size:.82rem;width:100%}
+  .dl{font-size:.9rem}
   .err,.fine{grid-column:1/-1}
   .fine{font-size:.72rem}
 }
-@media (max-width:400px){h1{font-size:1.15rem}.coin{font-size:.85rem}.dl{font-size:.9rem}}
+@media (max-width:400px){h1{font-size:1rem}.coin{font-size:.74rem}.dl{font-size:.82rem}.badge{display:none}}
 @media (max-height:560px){.tag,.fine{display:none}}
-@media (prefers-reduced-motion:reduce){.sign::before,.sign::after,.wait b::after{animation:none}.shot img.dev{transition:none}.coin{transition:none}}
+@media (prefers-reduced-motion:reduce){
+  .aurora,.floor,.beam,.badge,h1,.coin::after,.scan::before,.dot.wait{animation:none}
+  .layer,.shot,.dot{transition:none}
+}
 </style>
 </head>
 <body>
+<div class="bg" aria-hidden="true">
+  <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
+  <div class="floor"></div>
+  <canvas id="net"></canvas>
+  <div class="beam"></div>
+  <div class="vignette"></div>
+</div>
+
 <header>
-  <div class="sign"><h1>Future Self Photo Booth</h1></div>
-  <p class="tag" id="tag">Take a photo and see a frame from later in life.</p>
+  <div class="sign"><span class="badge">AI</span><h1>Future Self Photo Booth</h1></div>
+  <p class="tag" id="tag">Take a photo and watch yourself grow older, frame by frame.</p>
 </header>
 
 <main>
@@ -142,8 +177,14 @@ main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr
 
   <div class="pane pane-res">
     <div class="strip" aria-live="polite">
-      <div class="shot" id="shot"><div class="wait">Your frame will print here.</div></div>
-      <div class="meta"><strong id="ageLabel">Age</strong><button type="button" id="again" hidden>Print again</button></div>
+      <div class="shot" id="shot">
+        <img class="layer" id="l0" alt="">
+        <img class="layer" id="l1" alt="">
+        <div class="scan" id="scan" hidden></div>
+        <div class="wait" id="wait">Your future self will grow here.</div>
+      </div>
+      <div class="meta"><strong id="ageLabel">Age</strong><span><em id="stat" style="font-style:normal"></em><button type="button" id="replay" hidden>Replay</button></span></div>
+      <div class="dots" id="dots"></div>
       <p class="cap" id="cap"></p>
     </div>
     <button class="ghost only-small" id="back" type="button">Back to camera</button>
@@ -151,18 +192,20 @@ main{container-type:size;min-height:0;display:grid;grid-template-columns:1fr 1fr
 </main>
 
 <div class="bar">
-  <div class="chips" id="chips" role="radiogroup" aria-label="Age to generate"></div>
   <input type="password" id="code" placeholder="Access code" aria-label="Access code" autocomplete="off" hidden>
-  <button class="coin" id="go" type="button" disabled>Develop my frame</button>
-  <button class="dl" id="dl" type="button" disabled>Save as picture</button>
+  <button class="coin" id="go" type="button" disabled>Grow my future self</button>
+  <button class="dl" id="dl" type="button" disabled>Save this frame</button>
   <p class="err" id="err" role="alert"></p>
-  <p class="fine">Just for fun, AI guesses and not a forecast. Your photo is sent to AI services to guess your age and make the frame.</p>
+  <p class="fine">Just for fun, AI guesses and not a forecast. Your photo is sent to AI services to guess your age and make the frames.</p>
 </div>
 
 <script src="config.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const API = window.API_BASE || "";   // empty = same server; set by config.js when the page is hosted on GitHub Pages
+const LADDER = [30, 40, 50, 60, 70, 80, 90, 100];   // the frames of the "growing" movie
+const STEP = 3200, HEAVEN_HOLD = 5200, WORKERS = 3;
+const reduceMotion = matchMedia("(prefers-reduced-motion:reduce)").matches;
 const captions = [
   [25, "Still figuring out the plan."],
   [35, "Owns one really good coffee machine."],
@@ -174,10 +217,13 @@ const captions = [
   [999, "Moved to the cloud. Great view, no Wi-Fi needed."]
 ];
 const captionFor = a => captions.find(c => a <= c[0])[1];
+const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-let AGE = 50, photo = null, previewUrl = null, needsCode = false, camStream = null, busy = false;
-let result = null, resultUrl = null, seed = 7;
+let photo = null, previewUrl = null, needsCode = false, camStream = null, busy = false, seed = 7;
 let predictorOn = true, predicting = false, currentAge = null, noFace = false, estimateId = 0;
+let frames = [], cur = -1, runId = 0, paused = false, holdUntil = 0, timer = null;
+let front = 0, fadeT = null, tickId = 0;
+const L = [$("l0"), $("l1")];
 
 /* ----- camera ----- */
 function setPhoto(blob){
@@ -188,6 +234,7 @@ function setPhoto(blob){
   $("preview").src = previewUrl; $("preview").hidden = false; $("stageMsg").hidden = true;
   $("err").textContent = "";
   $("camBtn").textContent = "Retake";
+  resetBatch();
   estimateAge();
 }
 
@@ -195,14 +242,6 @@ function setPhoto(blob){
 function showNow(html){ $("now").innerHTML = html; $("now").hidden = !html; }
 // The guess is only accurate to a few years, so show a range instead of one number.
 const ageRange = a => Math.max(1, a - 2) + "–" + (a + 2);
-function applyAgeLimits(){
-  // ages at or below the current age make no sense as a "future" frame
-  document.querySelectorAll(".chip").forEach(b => { b.disabled = currentAge !== null && Number(b.dataset.age) <= currentAge; });
-  if (currentAge !== null && AGE <= currentAge){
-    const next = [...document.querySelectorAll(".chip")].find(b => !b.disabled);
-    if (next) setAge(Number(next.dataset.age));
-  }
-}
 /* One place for API calls: retries a dropped connection once and explains failures in plain words. */
 async function api(path, fd){
   const headers = needsCode ? {"X-Access-Code": $("code").value} : {};
@@ -213,18 +252,20 @@ async function api(path, fd){
       if (attempt === 1) throw new Error(API
         ? "Could not reach the server. Check your internet connection, or try a different network or DNS."
         : "Cannot reach the app server. Start it and open http://127.0.0.1:8000 in the browser.");
-      await new Promise(res => setTimeout(res, 1500));
+      await sleep(1500);
     }
   }
   if (!r.ok){
     const j = await r.json().catch(() => ({}));
-    throw new Error(typeof j.detail === "string" ? j.detail : "The server said no (error " + r.status + ").");
+    const err = new Error(typeof j.detail === "string" ? j.detail : "The server said no (error " + r.status + ").");
+    err.status = r.status;
+    throw err;
   }
   return r;
 }
 async function estimateAge(){
   const id = ++estimateId;
-  currentAge = null; noFace = false; applyAgeLimits();
+  currentAge = null; noFace = false;
   if (!predictorOn){ showNow(""); refresh(); return; }
   predicting = true; showNow("Reading your age..."); refresh();
   const fd = new FormData(); fd.append("file", photo, "photo.jpg");
@@ -240,9 +281,9 @@ async function estimateAge(){
     }
   }catch(e){
     if (id !== estimateId) return;
-    showNow(""); $("err").textContent = e.message + " You can still pick any age.";
+    showNow(""); $("err").textContent = e.message + " You can still grow your future self.";
   }
-  predicting = false; applyAgeLimits(); refresh();
+  predicting = false; refresh();
 }
 async function startCam(){
   try{
@@ -268,83 +309,159 @@ $("snap").onclick = () => {
   c.toBlob(b => setPhoto(b), "image/jpeg", .9);
 };
 
-/* ----- generate ----- */
-function showMsg(html, cls){ $("shot").innerHTML = '<div class="wait ' + (cls||"") + '">' + html + '</div>'; }
-async function generate(){
-  if (busy) return;
-  busy = true; $("err").textContent = ""; $("again").hidden = true; document.body.classList.add("show-result"); refresh();
-  showMsg('Developing<b></b>');
-  const fd = new FormData(); fd.append("file", photo, "photo.jpg"); fd.append("target_age", AGE); fd.append("seed", seed);
-  if (currentAge !== null) fd.append("current_age", currentAge);   // lets the prompt size the change
-  try{
-    const r = await api("/age", fd);
-    result = await r.blob();
-    if (resultUrl) URL.revokeObjectURL(resultUrl);
-    resultUrl = URL.createObjectURL(result);
-    const img = new Image(); img.alt = "You at age " + AGE; img.className = "raw";
-    img.onload = () => {
-      $("shot").textContent = ""; $("shot").appendChild(img);
-      requestAnimationFrame(() => requestAnimationFrame(() => { img.classList.add("dev"); img.classList.remove("raw"); }));
-    };
-    img.src = resultUrl;
-    $("again").hidden = false;
-  }catch(e){
-    result = null;
-    showMsg(e.message, "oops"); $("again").hidden = false;
+/* ----- the growing movie: frames are generated in a batch and played as they arrive ----- */
+function showWait(html, cls){ const w = $("wait"); w.className = "wait " + (cls || ""); w.innerHTML = html; w.hidden = !html; }
+function resetBatch(){
+  runId++; busy = false; clearInterval(timer); timer = null;
+  frames.forEach(f => f.url && URL.revokeObjectURL(f.url));
+  frames = []; cur = -1; paused = false;
+  L.forEach(l => { l.classList.remove("on"); l.removeAttribute("src"); });
+  $("scan").hidden = true; $("dots").textContent = ""; $("stat").textContent = ""; $("replay").hidden = true;
+  $("ageLabel").textContent = "Age"; $("cap").textContent = ""; $("shot").classList.remove("heaven");
+  showWait("Your future self will grow here.");
+  refresh();
+}
+function swap(url){   // cross-dissolve to a new picture on the back layer
+  const nb = L[1 - front], ob = L[front];
+  clearTimeout(fadeT);
+  nb.style.transition = "none"; nb.classList.remove("on"); nb.style.zIndex = 2; ob.style.zIndex = 1;
+  front = 1 - front;
+  nb.src = url;
+  (nb.decode ? nb.decode() : Promise.resolve()).catch(() => {}).then(() => {
+    void nb.offsetWidth; nb.style.transition = ""; nb.classList.add("on");
+    fadeT = setTimeout(() => { ob.style.transition = "none"; ob.classList.remove("on"); }, reduceMotion ? 50 : 1900);
+  });
+}
+function tickAge(from, to){   // the age counter runs up like a time machine
+  const id = ++tickId, t0 = performance.now(), ms = reduceMotion ? 0 : 1500;
+  (function run(t){
+    if (id !== tickId) return;
+    const p = ms ? Math.min(1, (t - t0) / ms) : 1, e = 1 - Math.pow(1 - p, 3);
+    $("ageLabel").textContent = "Age " + Math.round(from + (to - from) * e);
+    if (p < 1) requestAnimationFrame(run);
+  })(t0);
+}
+function show(i){
+  const f = frames[i];
+  if (!f || f.state !== "ok") return;
+  const prev = cur >= 0 ? frames[cur] : null;
+  cur = i; swap(f.url);
+  if (f.age === null){ tickId++; $("ageLabel").textContent = "Today"; $("cap").textContent = "This is you today. Watch what the years do."; }
+  else {
+    tickAge(prev && prev.age !== null && prev.age < f.age ? prev.age : (currentAge !== null ? currentAge : 18), f.age);
+    $("cap").textContent = captionFor(f.age);
   }
-  busy = false; refresh();
+  $("shot").classList.toggle("heaven", f.age !== null && f.age >= 100);
+  holdUntil = performance.now() + (f.age !== null && f.age >= 100 ? HEAVEN_HOLD : STEP);
+  updateDots();
+}
+function buildDots(){
+  const box = $("dots"); box.textContent = "";
+  frames.forEach((f, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "dot";
+    const name = f.age === null ? "Today" : "Age " + f.age;
+    b.title = name; b.setAttribute("aria-label", name);
+    b.onclick = () => { if (frames[i].state === "ok"){ paused = true; show(i); } };
+    box.appendChild(b);
+  });
+  updateDots();
+}
+function updateDots(){
+  [...$("dots").children].forEach((b, i) => { b.className = "dot " + (frames[i] ? frames[i].state : "") + (i === cur ? " cur" : ""); });
+  const total = frames.length - 1, done = frames.filter((f, i) => i > 0 && f.state !== "wait").length;
+  $("stat").textContent = busy ? "Growing " + done + "/" + total : "";
+  $("replay").hidden = !(frames.length > 1 && (paused || !busy));
+}
+function step(){   // the player: move on to the next frame that is ready, loop at the end
+  if (paused || !frames.length || performance.now() < holdUntil) return;
+  let n = cur + 1;
+  while (n < frames.length && frames[n].state === "fail") n++;
+  if (n < frames.length){ if (frames[n].state === "ok") show(n); return; }   // otherwise it is still being drawn
+  if (!busy) show(0);
+}
+$("replay").onclick = () => { paused = false; show(0); holdUntil = performance.now() + 1200; };
+
+async function makeFrame(run, f){
+  for (let attempt = 0; attempt < 3; attempt++){
+    if (run !== runId) return;
+    try{
+      const fd = new FormData(); fd.append("file", photo, "photo.jpg"); fd.append("target_age", f.age); fd.append("seed", seed);
+      if (currentAge !== null) fd.append("current_age", currentAge);   // lets the prompt size the change
+      const r = await api("/age", fd);
+      const blob = await r.blob();
+      if (run !== runId) return;
+      f.blob = blob; f.url = URL.createObjectURL(blob); f.state = "ok";
+      return;
+    }catch(e){
+      f.err = e.message;
+      const again = e.status === undefined || [429, 500, 502, 503, 504].includes(e.status);
+      if (!again || attempt === 2) break;
+      await sleep(5000 * (attempt + 1));   // let the rate limit breathe
+    }
+  }
+  if (run === runId) f.state = "fail";
+}
+async function generate(){
+  if (busy || !photo) return;
+  const run = ++runId;
+  busy = true; paused = false; $("err").textContent = "";
+  seed = frames.length ? Math.floor(Math.random() * 1e6) : 7;   // a second run gives a fresh look
+  frames.forEach(f => f.url && URL.revokeObjectURL(f.url));
+  const ages = LADDER.filter(a => currentAge === null || a >= currentAge + 4);
+  frames = [{age:null, state:"ok", blob:photo, url:URL.createObjectURL(photo)}].concat((ages.length ? ages : [100]).map(a => ({age:a, state:"wait"})));
+  cur = -1; document.body.classList.add("show-result");
+  showWait(""); $("scan").hidden = false; buildDots();
+  show(0); holdUntil = performance.now() + 1500;
+  clearInterval(timer); timer = setInterval(step, 200);
+  refresh();
+  const queue = frames.slice(1);
+  const worker = async () => { for (let f; (f = queue.shift()); ){ await makeFrame(run, f); if (run === runId) updateDots(); } };
+  await Promise.all(Array.from({length: WORKERS}, worker));
+  if (run !== runId) return;
+  busy = false; $("scan").hidden = true;
+  if (!frames.some(f => f.age !== null && f.state === "ok")){
+    clearInterval(timer); timer = null;
+    const first = frames.find(f => f.err);
+    showWait(first ? first.err : "Something went wrong. Please try again.", "oops");
+  } else if (frames.some(f => f.state === "fail")){
+    $("err").textContent = "Some frames could not be drawn and were skipped.";
+  }
+  updateDots(); refresh();
 }
 $("go").onclick = generate;
-$("again").onclick = () => { seed = Math.floor(Math.random() * 1e6); generate(); };
 $("back").onclick = () => document.body.classList.remove("show-result");
 
-/* ----- save as picture ----- */
+/* ----- save the frame that is on screen ----- */
 $("dl").onclick = async () => {
-  if (!result) return;
+  const f = frames[cur];
+  if (!f || !f.blob) return;
   const W = 440, pad = 22, iw = W - pad * 2, ih = Math.round(iw * 1.25), H = pad + ih + 96;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const x = c.getContext("2d");
-  x.fillStyle = "#fbf3e2"; x.fillRect(0, 0, W, H);
-  const img = await createImageBitmap(result);
+  const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#1c2656"); bg.addColorStop(1, "#080b22");
+  x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  const img = await createImageBitmap(f.blob);
   const s = Math.max(iw / img.width, ih / img.height), sw = iw / s, sh = ih / s;
   x.drawImage(img, (img.width - sw) / 2, Math.max(0, (img.height - sh) * .3), sw, sh, pad, pad, iw, ih);
-  x.strokeStyle = "rgba(0,0,0,.2)"; x.strokeRect(pad + .5, pad + .5, iw - 1, ih - 1);
-  x.fillStyle = "#1e1a17"; x.font = "28px 'Bowlby One','Arial Black',sans-serif"; x.fillText("Age " + AGE, pad, pad + ih + 36);
-  if (currentAge !== null){
-    x.fillStyle = "#6a5d45"; x.font = "15px Figtree,system-ui,sans-serif"; x.textAlign = "right";
+  x.strokeStyle = "rgba(77,243,255,.7)"; x.strokeRect(pad + .5, pad + .5, iw - 1, ih - 1);
+  x.fillStyle = "#4df3ff"; x.font = "800 26px Orbitron,'Arial Black',sans-serif"; x.fillText(f.age === null ? "Today" : "Age " + f.age, pad, pad + ih + 36);
+  if (f.age !== null && currentAge !== null){
+    x.fillStyle = "#9db0d6"; x.font = "15px 'Space Grotesk',system-ui,sans-serif"; x.textAlign = "right";
     x.fillText("Today " + ageRange(currentAge), W - pad, pad + ih + 36); x.textAlign = "left";
   }
-  x.fillStyle = "#4a4033"; x.font = "15px Figtree,system-ui,sans-serif"; x.fillText(captionFor(AGE), pad, pad + ih + 60);
-  x.fillStyle = "#6a5d45"; x.font = "12px Figtree,system-ui,sans-serif"; x.fillText("Future Self Photo Booth. Just for fun, an AI guess.", pad, H - 12);
+  x.fillStyle = "#d4def8"; x.font = "15px 'Space Grotesk',system-ui,sans-serif"; x.fillText(f.age === null ? "This is you today." : captionFor(f.age), pad, pad + ih + 60);
+  x.fillStyle = "#7d8fba"; x.font = "12px 'Space Grotesk',system-ui,sans-serif"; x.fillText("Future Self Photo Booth. Just for fun, an AI guess.", pad, H - 12);
   c.toBlob(b => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "future-self.png"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); });
 };
 
 function refresh(){
   const ready = photo && !predicting && !noFace && (!needsCode || $("code").value);
   $("go").disabled = !ready || busy;
-  $("go").textContent = busy ? "Developing..." : "Develop my frame";
-  $("dl").disabled = !result;
+  $("go").textContent = busy ? "Growing your future..." : frames.length ? "Grow again, new look" : "Grow my future self";
+  $("dl").disabled = !(frames[cur] && frames[cur].blob);
 }
 $("code").oninput = refresh;
-
-function setAge(a){
-  AGE = a; $("ageLabel").textContent = "Age " + a; $("cap").textContent = captionFor(a);
-  $("tag").textContent = a >= 100 ? "Take a photo and see yourself at 100, up in heaven."
-                                  : "Take a photo and see yourself at " + a + ".";
-  document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-checked", Number(b.dataset.age) === a));
-}
-function renderChips(ages){
-  const box = $("chips"); box.textContent = "";
-  ages.forEach(a => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "chip"; b.textContent = a; b.dataset.age = a;
-    b.setAttribute("role", "radio"); b.setAttribute("aria-label", "Age " + a);
-    b.onclick = () => setAge(a);
-    box.appendChild(b);
-  });
-}
-renderChips([20,30,40,50,60,70,80,90,100]);
-setAge(AGE);
 
 if (!/^https?:$/.test(location.protocol)){
   // opened as a file or preview: relative API calls cannot work here, so go to the running app
@@ -353,13 +470,69 @@ if (!/^https?:$/.test(location.protocol)){
 fetch(API + "/config").then(r => r.json()).then(c => {
   needsCode = c.needs_code; $("code").hidden = !needsCode;
   predictorOn = c.predictor !== false;
-  if (c.ages) renderChips(c.ages);
-  if (c.age) setAge(c.age);
-  applyAgeLimits();
   refresh();
 }).catch(() => {});
 refresh();
 startCam();   // camera-only: ask for the camera on load
+
+/* ----- background: a drifting neural network with data pulses ----- */
+(function(){
+  const cv = $("net"), ctx = cv.getContext("2d"), COLORS = ["77,243,255", "139,92,255", "255,79,216"];
+  let W, H, dpr, nodes = [], pulses = [], link = 150, mouse = {x: -9999, y: -9999};
+  function size(){
+    dpr = Math.min(devicePixelRatio || 1, 1.5); W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    link = Math.max(110, Math.min(190, W / 9));
+    const n = Math.min(120, Math.round(W * H / 15000));
+    nodes = Array.from({length: n}, () => ({x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .45, vy: (Math.random() - .5) * .45,
+      r: 1 + Math.random() * 1.8, c: COLORS[Math.floor(Math.random() * COLORS.length)]}));
+    pulses = [];
+  }
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+    const links = [];
+    for (const p of nodes){
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+    }
+    ctx.lineWidth = 1;
+    for (let i = 0; i < nodes.length; i++){
+      const a = nodes[i];
+      for (let j = i + 1; j < nodes.length; j++){
+        const b = nodes[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d < link){
+          ctx.strokeStyle = "rgba(" + a.c + "," + ((1 - d / link) * .38).toFixed(3) + ")";
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+          if (links.length < 300) links.push([a, b]);
+        }
+      }
+      const md = Math.hypot(a.x - mouse.x, a.y - mouse.y);
+      if (md < link * 1.3){
+        ctx.strokeStyle = "rgba(255,255,255," + ((1 - md / (link * 1.3)) * .45).toFixed(3) + ")";
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke();
+      }
+    }
+    if (links.length && pulses.length < 16 && Math.random() < .08){
+      const l = links[Math.floor(Math.random() * links.length)];
+      pulses.push({a: l[0], b: l[1], t: 0, sp: .012 + Math.random() * .014});
+    }
+    pulses = pulses.filter(p => (p.t += p.sp) < 1);
+    for (const p of pulses){
+      const x = p.a.x + (p.b.x - p.a.x) * p.t, y = p.a.y + (p.b.y - p.a.y) * p.t;
+      ctx.fillStyle = "rgba(" + p.a.c + ",.28)"; ctx.beginPath(); ctx.arc(x, y, 7, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y, 2, 0, 6.283); ctx.fill();
+    }
+    for (const p of nodes){
+      ctx.fillStyle = "rgba(" + p.c + ",.85)"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+    }
+    if (!reduceMotion) requestAnimationFrame(draw);
+  }
+  addEventListener("pointermove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  addEventListener("pointerleave", () => { mouse.x = mouse.y = -9999; });
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(size, 200); });
+  size(); draw();
+})();
 </script>
 </body>
 </html>

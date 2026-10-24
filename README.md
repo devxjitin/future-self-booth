@@ -1,10 +1,10 @@
 ﻿# Future Self Photo Booth
 
-A just-for-fun web app. The camera takes a photo and the app prints one photo-booth frame of what you might look like at an age you pick (20 to 90, default 50), or at 100 "in heaven" (clouds, golden light, halo and white robes). The frame "develops" as the AI image arrives and can be saved as a picture. The page always fits the screen, with no scrolling, and the camera is the only way to add a photo.
+A just-for-fun web app. The camera takes a photo and one button, "Grow my future self", generates a batch of frames (ages 30, 40 ... 90, plus 100 "in heaven" with clouds, golden light, halo and white robes). The frames play back as a growing movie: the age counter runs up and each new face dissolves into the next, with a dot timeline, Replay, and "Save this frame". Frames start playing as they arrive. Ages too close to the guessed current age are skipped. The page has an animated AI background (drifting aurora, neural network with data pulses, moving grid floor), always fits the screen with no scrolling, and the camera is the only way to add a photo.
 
 The images come from a FLUX model hosted on Azure AI Foundry (`FLUX.2-pro` by default). They are AI guesses, not forecasts, and identity is not always preserved (eye colour, face shape and expression can drift).
 
-After the photo is taken, `gpt-5.6-luna` guesses the current age ("You look 23–27 today", shown as a range because the guess is only accurate to a few years). Age buttons at or below that age are turned off, so only future ages can be picked. The guessed age is also sent with the image request, so the prompt says how many years pass (for example "about 22 now, show the same person 8 years later") and keeps a small gap small. If no face is found, the app asks for a retake.
+After the photo is taken, `gpt-5.6-luna` guesses the current age ("You look 23–27 today", shown as a range because the guess is only accurate to a few years). The guessed age is also sent with the image request, so the prompt says how many years pass (for example "about 22 now, show the same person 8 years later") and keeps a small gap small. If no face is found, the app asks for a retake.
 
 How the edit is steered (`app/azure_editor.py`, `app/imaging.py`):
 - The prompt adds age-specific details, so younger targets keep the same hair (no balding or gray before the 40s) and older ones gray naturally.
@@ -52,6 +52,6 @@ The API is open (no access code), so anyone with the page can generate images on
 - `ENABLE_PREDICTOR=1` adds a `/predict` endpoint that guesses the current age with a small ViT (needs `requirements-gpu.txt`). The UI does not use it yet.
 
 ## Notes
-- One generation takes about 12 to 20 seconds. "Print again" re-rolls it with a new random seed.
+- A batch is 8 FLUX calls, 3 at a time (about 40 to 60 seconds in all, within the 15 requests per minute limit); a frame that hits a rate limit is retried. All frames of a batch share one seed so the face stays consistent, "Grow again" uses a new seed.
 - The camera needs `localhost` or HTTPS.
 - Idea for better identity: Cradle2Cane (github.com/byliutao/Cradle2Cane, non-commercial licence) is a fast SDXL-Turbo based aging model that takes a single photo. It is not integrated yet.
